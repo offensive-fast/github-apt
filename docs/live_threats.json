@@ -1,0 +1,165 @@
+[
+    {
+        "id": "6a0f8f36422c8adb515a9804",
+        "name": "Middle East Malicious Infrastructure Report: 1,350+ C2 Servers Mapped Across 98 Providers",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [],
+        "cve": [
+            "CVE-2025-11953"
+        ],
+        "victim": "Global / Multiple Sectors",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a0f8f3596d6a5268e168a10",
+        "name": "One Man, One AI, One Fake Persona: Inside the 5-Year Influence and Fraud 'Patriot Bait' Campaign",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [
+            "981036cec38c6fd...",
+            "ea1c409fdcb6dca..."
+        ],
+        "cve": [],
+        "victim": "United States of America",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a0f8f34dd916c38a643df30",
+        "name": "The Gentleman Ransomware | Defense Evasion TTPs Uncovered",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [
+            "f918535f974591e..."
+        ],
+        "cve": [
+            "CVE-2024-55591"
+        ],
+        "victim": "Global / Multiple Sectors",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a0d971608b49dfc89267777",
+        "name": "The Evolution of ClickFix: From Cleartext to Server Side Polymorphism",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [],
+        "cve": [],
+        "victim": "Global / Multiple Sectors",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a0f272cd9c82db936e6a249",
+        "name": "PureLogs: Delivery via PawsRunner Steganography",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [
+            "0fcb86ae384e997...",
+            "d4174ea47745475...",
+            "93724f1a9ad3a28...",
+            "a1c01f257c924fb...",
+            "e2308749f6b7b75..."
+        ],
+        "cve": [],
+        "victim": "Global / Multiple Sectors",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a0db1f45208b8cf1b2b1571",
+        "name": "Operation Dragon Whistle: UNG002 Targets Chinese Academia via Weaponized Institutional Lure",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [
+            "cd99e83d241cfbb...",
+            "eb14d9e35a3bf0a...",
+            "35a478f53f64bd4...",
+            "902533852b16b6b...",
+            "ed7087e3afba4b3..."
+        ],
+        "cve": [],
+        "victim": "China",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a0daa32ac6609fbd06d30ae",
+        "name": "Beyond Tax Returns: How Shared Malware Infrastructure Scales Brand Abuse In Indonesia",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [
+            "59be73a679ac8f6...",
+            "b0f45091e729079...",
+            "a70dfc48b59aaa5...",
+            "5513348df877471..."
+        ],
+        "cve": [],
+        "victim": "Indonesia, Peru, Philippines, South Africa, Thailand",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a0d970e99916e7e7e17c893",
+        "name": "Popular node-ipc npm Package Infected with Credential Stealer",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [],
+        "location": "Unknown Country (Unknown Location)",
+        "malware": [
+            "449e4265979b5fd...",
+            "96097e0612d9575...",
+            "78a82d93b4f5808...",
+            "c2f4dc64aec4631...",
+            "bf9d8c0c3ed3cea..."
+        ],
+        "cve": [],
+        "victim": "Global / Multiple Sectors",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a3526fcbaffc5909dd73ce4",
+        "name": "Operation Poisson \u2013 Analyzing a Cybercriminal\u2019s Entire Operation",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [
+            "217.154.162.45",
+            "217.154.217.139"
+        ],
+        "location": "DE (52.5244,13.4105)",
+        "malware": [
+            "aa7ea19e3456745...",
+            "3b7642b0f84e83a...",
+            "c79091ceae7cd59...",
+            "1f00fd604bb18bb...",
+            "291cb1fd0f2709b..."
+        ],
+        "cve": [],
+        "victim": "France",
+        "date": "2026-06-21 06:47"
+    },
+    {
+        "id": "6a3447ad5cdebd92116d1c01",
+        "name": "Popa: From Sourcing to Distribution",
+        "apt_group": "Unknown APT Group / Cyber Campaign",
+        "ips": [
+            "57.128.125.81",
+            "15.235.224.157",
+            "65.108.9.68",
+            "15.235.53.67",
+            "38.22.17.218"
+        ],
+        "location": "FR (51.0344,2.3768)",
+        "malware": [
+            "a806cece4a4fbbe...",
+            "2a6f0837007726a...",
+            "0b4c112c98993f0...",
+            "bbcc1a208b4bd0a...",
+            "a29cdca72822c1f..."
+        ],
+        "cve": [],
+        "victim": "Global / Multiple Sectors",
+        "date": "2026-06-21 06:47"
+    }
+]
