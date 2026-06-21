@@ -2,66 +2,111 @@ import os
 import sys
 import json
 import requests
+import feedparser
 from datetime import datetime
 
 def send_discord_webhook(webhook_url, embed_data):
-    """Discord-এ সুন্দর একটি Rich Embed Alert নোটিফিকেশন পাঠাবে।"""
+    """Discord-এ Rich Embed Alert পাঠাবে।"""
     payload = {
-        "username": "BD Bangladesh Threat Hunter",
+        "username": "BD Cyber Command Intelligence",
         "avatar_url": "https://cdn-icons-png.flaticon.com/512/1014/1014293.png",
         "embeds": [embed_data]
     }
     try:
-        response = requests.post(webhook_url, json=payload)
+        response = requests.post(webhook_url, json=payload, timeout=10)
         if response.status_code == 204:
-            print("[+] Discord Alert Sent Successfully.")
+            print("[+] Discord Advanced Alert Sent.")
         else:
             print(f"[-] Discord Failed: {response.status_code}")
     except Exception as e:
-        print(f"[-] Discord Network Error: {e}")
+        print(f"[-] Discord Error: {e}")
 
-def fetch_real_threat_data(otx_key):
-    """AlienVault OTX এবং পাবলিক APT ফিড থেকে লাইভ রিয়েল অ্যাটাক ডেটা আনবে।"""
+def fetch_otx_data(otx_key):
+    """AlienVault OTX থেকে রিয়েল-টাইম গ্লোবাল পালস নিয়ে আসবে।"""
     headers = {"X-OTX-API-KEY": otx_key} if otx_key else {}
-    
-    # বাংলাদেশ বা গ্লোবাল রিয়েল-টাইম অ্যাক্টিভ পালস বা থ্রেট ফিড
-    url = "https://otx.alienvault.com/api/v1/pulses/subscribed?limit=10"
-    if not otx_key:
-        # ওটিএক্স কি না থাকলে পাবলিকলি অ্যাভেলেবল রিসেন্ট মডিফাইড ফিড ব্যবহার করবে
-        url = "https://otx.alienvault.com/api/v1/pulses/explore?limit=10&sort=-modified"
-
+    url = "https://otx.alienvault.com/api/v1/pulses/explore?limit=20&sort=-modified"
     try:
-        response = requests.get(url, headers=headers, timeout=15)
-        if response.status_code == 200:
-            return response.json().get("results", [])
-    except Exception as e:
-        print(f"[-] Error fetching OTX data: {e}")
+        res = requests.get(url, headers=headers, timeout=12)
+        if res.status_code == 200:
+            return res.json().get("results", [])
+    except:
+        print("[-] OTX Fetch Failed. Switching to fallback feeds...")
     return []
 
-def extract_iocs(pulse):
-    """আইওসি তালিকা থেকে আইপি, ম্যালওয়্যার হ্যাশ ইত্যাদি আলাদা করবে।"""
-    ips, malwares, cves = [], [], []
-    for indicator in pulse.get("indicators", []):
-        ind_type = indicator.get("type")
-        value = indicator.get("indicator")
-        if ind_type in ["IPv4", "IPv6"]:
-            ips.append(value)
-        elif ind_type in ["FileHash-SHA256", "FileHash-MD5"]:
-            malwares.append(value[:15] + "...") # বড় হ্যাশ ট্রিম করা হলো
-        elif ind_type == "CVE":
-            cves.append(value)
-    return list(set(ips))[:5], list(set(malwares))[:5], list(set(cves))[:5]
+def fetch_cisa_rss():
+    """CISA (Cybersecurity and Infrastructure Security Agency) থেকে লাইভ অ্যালার্ট ফিড আনবে।"""
+    alerts = []
+    try:
+        feed = feedparser.parse("https://www.cisa.gov/cybersecurity-advisories/all.xml")
+        for entry in feed.entries[:5]:
+            alerts.append({
+                "id": entry.get("id", entry.link),
+                "name": entry.title,
+                "description": entry.summary if "summary" in entry else "No summary available.",
+                "tags": ["CISA", "Alert"],
+                "adversaries": [],
+                "targeted_countries": ["Global / Infrastructure"],
+                "indicators": []
+            })
+    except Exception as e:
+        print(f"[-] CISA RSS Fetch Error: {e}")
+    return alerts
 
-def get_ip_location(ip, ipinfo_key):
-    """IPInfo API ব্যবহার করে অ্যাটাকারের কান্ট্রি ও লোকেশন বের করবে।"""
+def detect_advanced_metrics(pulse):
+    """ট্যাগ ও ডেসক্রিপশন অ্যানালাইসিস করে ম্যালওয়্যার ল্যাঙ্গুয়েজ এবং Severity লেভেল বের করবে।"""
+    text = (pulse.get("name", "") + " " + pulse.get("description", "")).lower()
+    tags = [t.lower() for t in pulse.get("tags", [])]
+    
+    # ১. ল্যাঙ্গুয়েজ ডিটেকশন
+    lang_map = {
+        "GOLANG": ["go", "golang", "go-malware"],
+        "RUST": ["rust", "rust-malware", "rs"],
+        "C / C++": ["c++", "cpp", "c-lang", "native"],
+        "POWERSHELL": ["powershell", "ps1", "win-ps"],
+        "PYTHON": ["python", "py", "keylogger.py"],
+        "BASH / BSH": ["bash", "sh", "shellscript"]
+    }
+    detected_lang = "UNKNOWN / NATIVE BINARY"
+    for lang, kws in lang_map.items():
+        if any(kw in tags for kw in kws) or any(kw in text for kw in kws):
+            detected_lang = lang
+            break
+
+    # ২. Severity (তীব্রতা) এবং কালার কোড নির্ধারণ
+    severity = "MEDIUM"
+    color = 16753920 # Orange
+    
+    high_keywords = ["ransomware", "apt", "critical", "zero-day", "0-day", "wiper", "government", "financial"]
+    if any(kw in text for kw in high_keywords) or any(kw in tags for kw in high_keywords):
+        severity = "HIGH / CRITICAL 🚨"
+        color = 15158332 # Red
+        
+    return detected_lang, severity, color
+
+def enrich_ip_intelligence(ip, ipinfo_key):
+    """IP এনরিচমেন্ট: অ্যাটাকারের ISP, ASN এবং স্প্যাম/বটনেট স্ট্যাটাস চেক করবে।"""
     if not ip:
-        return "Unknown Location", "Unknown Country"
+        return "Unknown ISP", "Unknown Country"
+    
     url = f"https://ipinfo.io/{ip}?token={ipinfo_key}" if ipinfo_key else f"https://ipinfo.io/{ip}/json"
     try:
         res = requests.get(url, timeout=5).json()
-        return res.get("loc", "Unknown"), res.get("country", "Unknown")
+        org = res.get("org", "Unknown ASN/ISP") # এটি ASN এবং ISP এর নাম দেয়
+        country = res.get("country", "Unknown")
+        return org, country
     except:
-        return "Unknown", "Unknown"
+        return "Unknown ISP", "Unknown Country"
+
+def extract_iocs(pulse):
+    """পালস থেকে সুনির্দিষ্ট আইওসি এক্সট্রাক্ট করা।"""
+    ips, malwares, cves = [], [], []
+    for ind in pulse.get("indicators", []):
+        itype = ind.get("type")
+        val = ind.get("indicator")
+        if itype in ["IPv4", "IPv6"]: ips.append(val)
+        elif itype in ["FileHash-SHA256", "FileHash-MD5"]: malwares.append(val[:15] + "...")
+        elif itype == "CVE": cves.append(val)
+    return list(set(ips))[:5], list(set(malwares))[:5], list(set(cves))[:5]
 
 def main():
     otx_key = os.getenv("OTX_API_KEY")
@@ -69,98 +114,76 @@ def main():
     ipinfo_key = os.getenv("IPINFO_KEY")
 
     if not discord_webhook:
-        print("[-] Error: DISCORD_WEBHOOK is required.")
+        print("[-] DISCORD_WEBHOOK missing.")
         sys.exit(1)
 
-    print("[*] Gathering Live Real-World Threat Intelligence...")
-    pulses = fetch_real_threat_data(otx_key)
-    
-    if not pulses:
-        print("[-] No active pulses fetched. Exiting.")
-        return
+    # ওটিএক্স এবং সিআইএসএ ২ সোর্স থেকেই ডেটা নেওয়া (মাল্টি-ফিড)
+    print("[*] Gathering Multi-Feed Threat Intelligence...")
+    all_pulses = fetch_otx_data(otx_key) + fetch_cisa_rss()
 
-    # ইতিমধ্যে প্রসেস হওয়া পালস ট্র্যাক করার জন্য (ডুপ্লিকেট এড়াতে)
     processed_file = "docs/live_threats.json"
     existing_ids = []
     if os.path.exists(processed_file):
         try:
             with open(processed_file, "r") as f:
-                old_data = json.load(f)
-                existing_ids = [item["id"] for item in old_data if "id" in item]
-        except:
-            existing_ids = []
+                existing_ids = [item["id"] for item in json.load(f) if "id" in item]
+        except: pass
 
-    new_threats_to_save = []
+    new_threats = []
 
-    for pulse in pulses:
-        pulse_id = pulse.get("id")
-        
-        # ডুপ্লিকেট অ্যালার্ট ফিল্টারিং (যা আগে পাঠানো হয়নি)
-        if pulse_id in existing_ids:
+    for pulse in all_pulses:
+        pid = pulse.get("id")
+        if pid in existing_ids:
             continue
 
-        # APT Group বা অ্যাটাকার ডিটেইলস এক্সট্রাক্ট করা (নন-উইকিপিডিয়া/আননোন হলে 'Unknown APT' দেখাবে)
-        targeted_adversaries = pulse.get("adversaries", [])
-        apt_group = targeted_adversaries[0] if targeted_adversaries else "Unknown APT Group / Cyber Campaign"
-        
-        # অ্যাটাকের টার্গেট বা ভিকটিম ইনফরমেশন
-        targeted_industries = pulse.get("targeted_countries", []) or ["Global / Multiple Sectors"]
-        victim = ", ".join(targeted_industries)
-
-        # আইওসি, ম্যালওয়্যার এবং সিভিই এক্সট্রাকশন
+        # অ্যাডভান্সড মেট্রিক্স এক্সট্রাকশন
+        lang, severity, embed_color = detect_advanced_metrics(pulse)
         ips, malwares, cves = extract_iocs(pulse)
         
-        # ফার্স্ট আইপি ডিটেক্ট করে লোকেশন বের করা
+        # আইপি এনরিচমেন্ট
         primary_ip = ips[0] if ips else None
-        location, country = get_ip_location(primary_ip, ipinfo_key)
+        isp_asn, country = enrich_ip_intelligence(primary_ip, ipinfo_key)
 
-        # ডিস্কোর্ড এম্বেড ডেটা ফরম্যাটিং
+        apt_group = pulse.get("adversaries", [None])[0] if pulse.get("adversaries") else "Unknown / Not Defined"
+        victim = ", ".join(pulse.get("targeted_countries", [])) or "Global / Multiple Infrastructure"
+
+        # ডিস্কোর্ড অ্যাডভান্সড এম্বেড মেসেজ
         embed = {
-            "title": f"🚨 REAL ATTACK DETECTED: {pulse.get('name')}",
-            "description": f"**Description:** {pulse.get('description', 'No description provided.')[:300]}...",
-            "color": 16507648, # Orange/Red Alert Color
+            "title": f"📢 ADVANCED INTEL: {pulse.get('name')}",
+            "description": f"**Description:** {pulse.get('description', 'No details specified.')[:300]}...",
+            "color": embed_color,
             "fields": [
-                {"name": "👤 APT Group / Threat Actor", "value": str(apt_group), "inline": True},
-                {"name": "🌍 Actor Country / Location", "value": f"{country} ({location})", "inline": True},
-                {"name": "🎯 Victim / Target Country", "value": str(victim), "inline": True},
+                {"name": "🔥 Severity Level", "value": f"`{severity}`", "inline": True},
+                {"name": "👤 Threat Actor / APT", "value": f"**{apt_group}**", "inline": True},
+                {"name": "🛠️ Tech / Language", "value": f"`{lang}`", "inline": True},
+                {"name": "🎯 Targeted Sectors", "value": str(victim), "inline": True},
+                {"name": "🏢 Attacker ASN / ISP", "value": f"`{isp_asn}` ({country})", "inline": False},
                 {"name": "💻 Exploited CVE(s)", "value": ", ".join(cves) if cves else "None Identified", "inline": True},
-                {"name": "🦠 Malware / IOC Hashes", "value": ", ".join(malwares) if malwares else "None Identified", "inline": False},
-                {"name": "🌐 Attacking IP Address(es)", "value": ", ".join(ips) if ips else "None Identified", "inline": False}
+                {"name": "🌐 Active C2 / Attacking IPs", "value": ", ".join(ips) if ips else "None Identified", "inline": False},
+                {"name": "🦠 Malware Hashes / IOCs", "value": ", ".join(malwares) if malwares else "None Identified", "inline": False}
             ],
             "timestamp": datetime.utcnow().isoformat(),
-            "footer": {"text": f"Pulse ID: {pulse_id} | Real-Time BD Cyber Command Intel"}
+            "footer": {"text": f"Source Identifier: {pid} | Advanced Threat Hunting Module"}
         }
 
-        # ডিস্কোর্ডে লাইভ অ্যালার্ট পাঠানো
         send_discord_webhook(discord_webhook, embed)
         
-        # ডাটাবেজ বা ফাইল আপডেটের জন্য সেভ রাখা
-        new_threats_to_save.append({
-            "id": pulse_id,
-            "name": pulse.get("name"),
-            "apt_group": apt_group,
-            "ips": ips,
-            "location": f"{country} ({location})",
-            "malware": malwares,
-            "cve": cves,
-            "victim": victim,
+        new_threats.append({
+            "id": pid, "name": pulse.get("name"), "apt_group": apt_group,
+            "severity": severity, "language": lang, "ips": ips, "isp": isp_asn,
+            "location": country, "malware": malwares, "cve": cves, "victim": victim,
             "date": datetime.utcnow().strftime('%Y-%m-%d %H:%M')
         })
 
-    # JSON ফাইল মেইনটেইন করা
-    if new_threats_to_save:
+    if new_threats:
         os.makedirs("docs", exist_ok=True)
-        # পুরাতন ডেটার সাথে নতুন ডেটা যোগ করা
         try:
-            with open(processed_file, "r") as f:
-                current_db = json.load(f)
-        except:
-            current_db = []
-            
-        updated_db = new_threats_to_save + current_db
+            with open(processed_file, "r") as f: current_db = json.load(f)
+        except: current_db = []
+        
         with open(processed_file, "w") as f:
-            json.dump(updated_db[:100], f, indent=4) # সর্বোচ্চ ১০০টি রেকর্ড হিস্ট্রি রাখবে কনফ্লিক্ট এড়াতে
-        print(f"[+] Successfully saved {len(new_threats_to_save)} new threat records.")
+            json.dump((new_threats + current_db)[:100], f, indent=4)
+        print(f"[+] Successfully integrated {len(new_threats)} advanced threats.")
 
 if __name__ == "__main__":
     main()
