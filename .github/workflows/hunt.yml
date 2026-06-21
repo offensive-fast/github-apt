@@ -1,67 +1,20 @@
-name: 🇧🇩 BD Live Threat Map — Collect & Deploy
-
-on:
-  schedule:
-    - cron: '*/30 * * * *' # প্রতি ৩০ মিনিট পর পর স্ক্রিপ্টটি নিজে নিজে রান করবে 
-  workflow_dispatch: # যখন ইচ্ছা ম্যানুয়ালি ক্লিক করে রান করার অপশন
-  push:
-    branches: [main]
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-jobs:
-  collect-and-deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: Setup Python Environment
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Dependencies
-        run: pip install requests
-
-      - name: Run Real Bangladesh Threat Hunter
-        env:
-          OTX_API_KEY:      ${{ secrets.OTX_API_KEY }}
-          DISCORD_WEBHOOK:  ${{ secrets.DISCORD_WEBHOOK }}
-          IPINFO_KEY:       ${{ secrets.IPINFO_KEY }}
-        run: python3 collect_threats.py
-
-      - name: Commit & Push To Base (No-Conflict Mode)
+- name: Commit & Push To Base (No-Conflict Mode)
         run: |
           git config user.name  "BD Threat Bot"
           git config user.email "bot@bd-threat-map.local"
           
+          # রিমোট ব্রাঞ্চ থেকে লেটেস্ট কোড ট্র্যাক করা
           git fetch origin main
           git add docs/live_threats.json
           
+          # যদি ফাইলে পরিবর্তন থাকে, তবেই কেবল প্রসেস করবে
           if ! git diff --staged --quiet; then
-            git commit -m "chore: real-threat alert update $(date -u +'%Y-%m-%d %H:%M')"
+            git commit -m "chore: advanced real-threat alert update $(date -u +'%Y-%m-%d %H:%M')"
+            
+            # রিমোট পরিবর্তনের সাথে লোকাল পরিবর্তন পুশ করার আগে রিবেস করা
             git pull origin main --rebase -X theirs
+            
             git push origin main
           else
             echo "No new unique attacks to commit in this cycle."
           fi
-
-      - name: Setup Pages Infrastructure
-        uses: actions/configure-pages@v4
-
-      - name: Upload Threat Map Data Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/
-
-      - name: Deploy Threat Map to GitHub Pages
-        uses: actions/deploy-pages@v4
